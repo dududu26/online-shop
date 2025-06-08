@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tambah Produk - Admin</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: #f0f2f5;
+      padding-top: 80px;
+    }
+
+    nav {
+      background: linear-gradient(to right, #1e88e5, #3949ab);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    nav .brand {
+      font-weight: 600;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    nav .brand:hover {
+      transform: scale(1.05);
+    }
+
+    nav .nav-links a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+      font-weight: 500;
+      transition: color 0.2s, transform 0.2s;
+    }
+
+    nav .nav-links a:hover {
+      color: #ffeb3b;
+      transform: translateY(-2px);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin: 1.5rem 0;
+      font-weight: 600;
+    }
+
+    form {
+      max-width: 480px;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin: auto;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    form:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 1.2rem;
+      font-weight: 500;
+      font-size: 20px;
+      color: #444;
+    }
+
+    input, textarea, select {
+      width: 90%;
+      padding: 0.6rem 0.9rem;
+      margin-top: 0.4rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: #1e88e5;
+      box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.2);
+      outline: none;
+    }
+
+    button {
+      margin-top: 1.5rem;
+      padding: 0.7rem 1.5rem;
+      background: #1e88e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      background: #1565c0;
+      transform: translateY(-2px);
+    }
+
+    #status {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 20;
+      color: #1e88e5;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand">Admin Panel</div>
+    <div class="nav-links">
+      <a href="daftar-pesanan.html">pesanan</a>
+      <a href="utentang.html">edit tentang</a>
+      <a href="dashadmin.html">stok</a>
+    </div>
+  </nav>
+
+  <h1>Tambah Produk Baru</h1>
+
+  <form id="produkForm">
+    <label>Gambar Produk</label>
+    <input type="file" id="gambar" accept="image/*" required />
+
+    <label>Nama Produk</label>
+    <input type="text" id="nama" required />
+
+    <label>Harga</label>
+    <input type="number" id="harga" required />
+
+    <label>Modal (Rp)</label>
+    <input type="number" id="modal" required />
+
+    <label>Deskripsi</label>
+    <textarea id="deskripsi" rows="4"></textarea>
+
+    <label>Jenis</label>
+    <input type="text" id="jenis" />
+
+    <label>Warna</label>
+    <input type="text" id="warna" />
+
+    <label>Kategori</label>
+    <input type="text" id="kategori" required />
+
+    <label>Ukuran</label>
+    <input type="text" id="ukuran" />
+
+    <label>Stok</label>
+    <input type="number" id="stok" required />
+
+    <label>Tersedia?</label>
+    <select id="tersedia">
+      <option value="true">Ya</option>
+      <option value="false">Tidak</option>
+    </select>
+
+    <label>Promo</label>
+    <input type="text" id="promo" placeholder="Contoh: Lebaran Sale" />
+
+    <label>Diskon (%)</label>
+    <input type="number" id="diskon" placeholder="Contoh: 20" min="0" max="100" />
+
+    <button type="submit">Tambah Produk</button>
+    <div id="status"></div>
+  </form>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabase = createClient(
+      'https://ezciwtljpsxaahkipjnx.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2l3dGxqcHN4YWFoa2lwam54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDQ0NzUsImV4cCI6MjA2MjcyMDQ3NX0.dckoZp453R5N-uAOGEVgCmq33anWu8AXYWalJc6i1Fk'
+    )
+
+    const form = document.getElementById('produkForm')
+    const statusDiv = document.getElementById('status')
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      statusDiv.textContent = 'Mengunggah gambar...'
+
+      const file = document.getElementById('gambar').files[0]
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}.${fileExt}`
+      const filePath = `${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('produk-img')
+        .upload(filePath, file)
+
+      if (uploadError) {
+        statusDiv.textContent = '❌ Gagal upload gambar: ' + uploadError.message
+        return
+      }
+
+      const { data: publicUrlData, error: urlError } = await supabase
+        .storage
+        .from('produk-img')
+        .getPublicUrl(filePath)
+
+      if (urlError) {
+        statusDiv.textContent = '❌ Gagal ambil URL gambar: ' + urlError.message
+        return
+      }
+
+      const imageUrl = publicUrlData.publicUrl
+
+      const produk = {
+        nama: document.getElementById('nama').value,
+        harga: parseInt(document.getElementById('harga').value),
+        modal: parseInt(document.getElementById('modal').value),
+        deskripsi: document.getElementById('deskripsi').value,
+        jenis: document.getElementById('jenis').value,
+        warna: document.getElementById('warna').value,
+        kategori: document.getElementById('kategori').value,
+        ukuran: document.getElementById('ukuran').value,
+        stok: parseInt(document.getElementById('stok').value),
+        tersedia: document.getElementById('tersedia').value === 'true',
+        gambar: imageUrl,
+        promo: document.getElementById('promo').value,
+        diskon: parseInt(document.getElementById('diskon').value) || 0
+      }
+
+      statusDiv.textContent = 'Menyimpan produk ke database...'
+
+      const { error } = await supabase.from('produk').insert([produk])
+
+      if (error) {
+        statusDiv.textContent = '❌ Gagal simpan produk: ' + error.message
+      } else {
+        statusDiv.textContent = '✅ Produk berhasil ditambahkan!'
+        form.reset()
+      }
+    })
+  </script>
+</body>
+</html>

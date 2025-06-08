@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daftar Pesanan</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f0f2f5;
+      padding-top: 70px;
+    }
+
+    nav {
+      background: linear-gradient(to right, #1e88e5, #3949ab);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    nav .brand {
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    nav .nav-links a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+
+    nav .nav-links a:hover {
+      opacity: 0.8;
+    }
+
+    h1 {
+      color: #333;
+      margin: 1rem 0;
+      text-align: center;
+    }
+
+    .pesanan-list {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .pesanan-item {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 1px solid #ddd;
+      padding: 1rem 0;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .pesanan-item:last-child {
+      border-bottom: none;
+    }
+
+    .pesanan-img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      flex-shrink: 0;
+    }
+
+    .pesanan-info {
+      flex-grow: 1;
+      min-width: 250px;
+    }
+
+    .pesanan-info h2 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.25rem;
+      color: #0077cc;
+    }
+
+    .pesanan-info p {
+      margin: 0.2rem 0;
+      color: #555;
+    }
+
+    .pesanan-status {
+      font-weight: bold;
+      color: green;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    .btn-aksi {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: white;
+    }
+
+    .btn-packing {
+      background-color: #17a2b8;
+    }
+
+    .btn-kirim {
+      background-color: #28a745;
+    }
+
+    .btn-batal {
+      background-color: #dc3545;
+    }
+
+    .pengiriman {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .pengiriman label {
+      display: block;
+      margin-top: 5px;
+    }
+
+    .pengiriman input,
+    .pengiriman select {
+      width: 100%;
+      padding: 5px;
+      margin-top: 2px;
+      margin-bottom: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand">Admin Panel</div>
+    <div class="nav-links">
+      <a href="dashadmin.html">stok</a>
+      <a href="admin.html">admin </a>
+    </div>
+  </nav>
+
+  <h1>📋 Daftar Pesanan Masuk</h1>
+  <div class="pesanan-list" id="pesananList">
+    <p>Memuat data pesanan...</p>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabase = createClient(
+      'https://ezciwtljpsxaahkipjnx.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2l3dGxqcHN4YWFoa2lwam54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDQ0NzUsImV4cCI6MjA2MjcyMDQ3NX0.dckoZp453R5N-uAOGEVgCmq33anWu8AXYWalJc6i1Fk'
+    );
+
+    const pesananList = document.getElementById('pesananList');
+
+    async function getPublicUrl(path) {
+      try {
+        if (!path || path.startsWith("http")) return path || 'https://via.placeholder.com/120';
+        const { data, error } = supabase.storage.from("produk").getPublicUrl(path);
+        if (error) {
+          console.error("Gagal mendapatkan public URL:", error);
+          return 'https://via.placeholder.com/120';
+        }
+        return data?.publicUrl || 'https://via.placeholder.com/120';
+      } catch (err) {
+        console.error("Kesalahan di getPublicUrl:", err);
+        return 'https://via.placeholder.com/120';
+      }
+    }
+
+    async function loadPesanan() {
+      try {
+        const { data: pesananData, error: pesananError } = await supabase
+          .from('pesanan')
+          .select(`
+            *,
+            produk:produk_id (
+              nama,
+              gambar,
+              harga
+            )
+          `)
+          .order('created_at', { ascending: false });
+
+        if (pesananError) {
+          console.error("Gagal mengambil data pesanan:", pesananError);
+          pesananList.innerHTML = `<p style="color:red">Gagal mengambil data pesanan: ${pesananError.message}</p>`;
+          return;
+        }
+
+        if (!pesananData || pesananData.length === 0) {
+          pesananList.innerHTML = `<p>Tidak ada pesanan saat ini.</p>`;
+          return;
+        }
+
+        pesananList.innerHTML = '';
+
+        for (const pesan of pesananData) {
+          const produk = pesan.produk || {};
+          const imgUrl = await getPublicUrl(produk.gambar);
+
+          const item = document.createElement('div');
+          item.className = 'pesanan-item';
+
+          item.innerHTML = `
+            <img src="${imgUrl}" alt="Gambar produk" class="pesanan-img" />
+            <div class="pesanan-info">
+              <h2>${produk.nama || 'Tanpa Nama Produk'}</h2>
+              <p><strong>Harga:</strong> Rp ${Number(produk.harga || 0).toLocaleString('id-ID')}</p>
+              <p><strong>Ukuran:</strong> ${pesan.ukuran || '-'}</p>
+              <p><strong>Warna:</strong> ${pesan.warna || '-'}</p>
+              <p><strong>Nama Pemesan:</strong> ${pesan.nama_pemesan || '-'}</p>
+              <p><strong>WhatsApp:</strong> ${pesan.whatsapp || '-'}</p>
+              <p><strong>Alamat:</strong> ${pesan.alamat || '-'}</p>
+              <p><strong>Status:</strong> <span class="pesanan-status">${pesan.status || 'pending'}</span></p>
+
+              <div class="pengiriman">
+                <label>Jasa Kirim:
+                  <select id="kurir-${pesan.id}">
+                    <option value="JNE">JNE</option>
+                    <option value="J&T">J&T</option>
+                    <option value="Sicepat">Sicepat</option>
+                    <option value="POS">POS Indonesia</option>
+                    <option value="COD">COD</option>
+                  </select>
+                </label>
+                <label>Alamat Pengiriman:
+                  <input type="text" id="alamat-${pesan.id}" value="${pesan.alamat || ''}" />
+                </label>
+                <label>Biaya Kirim (Rp):
+                  <input type="number" id="biaya-${pesan.id}" placeholder="contoh: 10000" />
+                </label>
+              </div>
+            </div>
+            <div class="btn-group">
+              <button class="btn-aksi btn-packing" onclick="updateStatus('${pesan.id}', 'packing')">✅ Packing</button>
+              <button class="btn-aksi btn-kirim" onclick="kirimPesanan('${pesan.id}')">📦 Kirim</button>
+              <button class="btn-aksi btn-batal" onclick="updateStatus('${pesan.id}', 'batal')">❌ Batalkan</button>
+            </div>
+          `;
+
+          pesananList.appendChild(item);
+        }
+      } catch (err) {
+        console.error("Kesalahan tidak terduga di loadPesanan:", err);
+        pesananList.innerHTML = `<p style="color:red">Terjadi kesalahan saat memuat pesanan.</p>`;
+      }
+    }
+
+    window.updateStatus = async (id, status) => {
+      try {
+        const { error } = await supabase
+          .from('pesanan')
+          .update({ status })
+          .eq('id', id);
+
+        if (error) {
+          console.error("Gagal memperbarui status:", error);
+          alert("Gagal memperbarui status: " + error.message);
+          return;
+        }
+
+        loadPesanan();
+      } catch (err) {
+        console.error("Kesalahan updateStatus:", err);
+        alert("Terjadi kesalahan saat memperbarui status.");
+      }
+    };
+
+    window.kirimPesanan = async (id) => {
+      const jasa = document.getElementById(`kurir-${id}`)?.value || '';
+      const alamat = document.getElementById(`alamat-${id}`)?.value || '';
+      const biaya = parseInt(document.getElementById(`biaya-${id}`)?.value) || 0;
+
+      try {
+        const { error } = await supabase
+          .from('pesanan')
+          .update({
+            status: 'dikirim',
+            jasa_kirim: jasa,
+            alamat: alamat,
+            biaya_kirim: biaya
+          })
+          .eq('id', id);
+
+        if (error) {
+          alert("Gagal kirim: " + error.message);
+          return;
+        }
+
+        loadPesanan();
+      } catch (err) {
+        console.error("Error kirim pesanan:", err);
+        alert("Terjadi kesalahan saat mengirim pesanan.");
+      }
+    };
+
+    loadPesanan();
+  </script>
+</body>
+</html>

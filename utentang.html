@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edit Tentang Kami & Tim</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+    }
+    textarea, input[type="text"], input[type="file"] {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
+    }
+    .team-member {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      background: #f9f9f9;
+      position: relative;
+    }
+    .preview-img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-top: 10px;
+      display: block;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .status {
+      margin-top: 15px;
+      color: green;
+      text-align: center;
+      font-weight: bold;
+    }
+    .remove-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #e74c3c;
+      border: none;
+      color: white;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 22px;
+      text-align: center;
+      padding: 0;
+    }
+    .remove-btn:hover {
+      background: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Edit Tentang Kami</h1>
+    <form id="aboutForm">
+      <label for="about1">Paragraf 1:</label>
+      <textarea id="about1" rows="4" required></textarea>
+      <label for="about2">Paragraf 2:</label>
+      <textarea id="about2" rows="4" required></textarea>
+
+      <h3>Tim Kami</h3>
+      <div id="teamContainer"></div>
+      <button type="button" onclick="addTeamMember()">+ Tambah Anggota Tim</button>
+
+      <button type="submit">Simpan</button>
+      <div class="status" id="statusMsg"></div>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabase = window.supabase;
+    const client = supabase.createClient(
+      'https://ezciwtljpsxaahkipjnx.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2l3dGxqcHN4YWFoa2lwam54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDQ0NzUsImV4cCI6MjA2MjcyMDQ3NX0.dckoZp453R5N-uAOGEVgCmq33anWu8AXYWalJc6i1Fk'
+    );
+
+    let memberCount = 0;
+
+    function addTeamMember(member = {}) {
+      memberCount++;
+      const index = memberCount;
+      const container = document.createElement('div');
+      container.className = 'team-member';
+      container.dataset.index = index;
+      container.innerHTML = `
+        <button type="button" class="remove-btn" title="Hapus anggota">&times;</button>
+        <label>Nama:</label>
+        <input type="text" name="name${index}" value="${member.name || ''}" required />
+        <label>Jabatan:</label>
+        <input type="text" name="position${index}" value="${member.position || ''}" required />
+        <label>Foto:</label>
+        <input type="file" name="photo${index}" accept="image/*" />
+        <img id="preview${index}" class="preview-img" src="${member.photo_url || ''}" alt="Preview foto anggota" />
+      `;
+
+      document.getElementById('teamContainer').appendChild(container);
+
+      const fileInput = container.querySelector(`input[name="photo${index}"]`);
+      const previewImg = container.querySelector(`#preview${index}`);
+
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = ev => previewImg.src = ev.target.result;
+          reader.readAsDataURL(file);
+        } else {
+          previewImg.src = member.photo_url || '';
+        }
+      });
+
+      container.querySelector('.remove-btn').addEventListener('click', () => {
+        container.remove();
+      });
+    }
+
+    document.getElementById('aboutForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('statusMsg');
+      status.style.color = 'green';
+      status.textContent = 'Menyimpan...';
+
+      const paragraph1 = document.getElementById('about1').value.trim();
+      const paragraph2 = document.getElementById('about2').value.trim();
+
+      const members = [];
+      const memberDivs = document.querySelectorAll('.team-member');
+
+      try {
+        for (let i = 0; i < memberDivs.length; i++) {
+          const idx = memberDivs[i].dataset.index;
+          const name = memberDivs[i].querySelector(`input[name="name${idx}"]`).value.trim();
+          const position = memberDivs[i].querySelector(`input[name="position${idx}"]`).value.trim();
+          const fileInput = memberDivs[i].querySelector(`input[name="photo${idx}"]`);
+          const previewImg = memberDivs[i].querySelector(`#preview${idx}`);
+          const file = fileInput.files[0];
+
+          let photo_url = previewImg.src || null;
+
+          if (file) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `member_${Date.now()}_${i}.${fileExt}`;
+
+            const { data, error } = await client.storage
+              .from('tentang-img')
+              .upload(fileName, file, { upsert: true });
+
+            if (error) throw error;
+
+            const { data: publicUrlData } = client
+              .storage
+              .from('tentang-img')
+              .getPublicUrl(fileName);
+
+            photo_url = publicUrlData.publicUrl;
+          }
+
+          members.push({ name, position, photo_url });
+        }
+
+        const { error: upsertError } = await client
+          .from('about_us')
+          .upsert([{
+            id: 1,
+            paragraph1,
+            paragraph2,
+            team: members,
+            updated_at: new Date().toISOString()
+          }], { onConflict: ['id'] });
+
+        if (upsertError) throw upsertError;
+
+        status.textContent = 'Berhasil disimpan!';
+      } catch (err) {
+        console.error(err);
+        status.style.color = 'red';
+        status.textContent = 'Gagal menyimpan: ' + err.message;
+      }
+    });
+
+    async function loadInitialData() {
+      const { data, error } = await client
+        .from('about_us')
+        .select('*')
+        .eq('id', 1)
+        .single();
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      document.getElementById('about1').value = data.paragraph1 || '';
+      document.getElementById('about2').value = data.paragraph2 || '';
+
+      if (Array.isArray(data.team)) {
+        data.team.forEach(member => addTeamMember(member));
+      }
+    }
+
+    loadInitialData();
+  </script>
+</body>
+</html>

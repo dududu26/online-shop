@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fashion Shop - Checkout</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-top: 20px;
+    }
+    .checkout-container {
+      max-width: 600px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    img.product-img {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .product-info {
+      margin-bottom: 15px;
+    }
+    .label {
+      font-weight: 600;
+      color: #555;
+    }
+    .value, select {
+      margin-left: 8px;
+      font-size: 14px;
+    }
+    .price {
+      color: #e91e63;
+      font-weight: bold;
+      font-size: 22px;
+      margin-top: 10px;
+    }
+    .price .harga-asli {
+      text-decoration: line-through;
+      color: #999;
+      font-weight: normal;
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    .promo-text {
+      background: #ff4081;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 13px;
+      display: inline-block;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+    body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    background: #f5f5f5;
+  }
+
+  /* Navbar Shopee-style */
+  nav {
+    background-color: #ffffff;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  nav a {
+  color: #333;
+  background-color: #ff5722;
+  text-decoration: none;
+  margin: 0 3px;            /* Jarak antar tombol lebih kecil */
+  font-weight: 500;
+  font-size: 10px;          /* Ukuran teks diperkecil */
+  padding: 2px 6px;         /* Kolom lebih ramping */
+  border-radius: 200px;
+  display: inline-block;
+  transition: 0.3s;
+  border: 1px solid #ffccbc; /* Garis luar tipis dan lembut */
+}
+
+nav a:hover {
+  background-color: #fff;
+  color: #ff5722;
+  box-shadow: 0 0 5px rgba(255, 87, 34, 0.6);
+}
+
+  /* Brand / Logo di bawah navbar */
+  .brand {
+    font-weight: bold;
+    font-size: 24px;
+    text-align: center;
+    color: #ff5722;
+    margin: 20px auto;
+    cursor: pointer;
+  }
+
+    .btn-confirm {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 20px;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      color: #333;
+    }
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .qty-controls button {
+      background: #ccc;
+      border: none;
+      padding: 4px 10px;
+      font-size: 18px;
+      cursor: pointer;
+      margin: 0 5px;
+      border-radius: 4px;
+    }
+    .hapus-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .total-harga {
+      text-align: right;
+      font-weight: bold;
+      font-size: 18px;
+      margin-top: 10px;
+    }
+    .notif {
+      text-align: center;
+      background: #ffdede;
+      border: 1px solid #ff4b4b;
+      color: #a00000;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      display: none;
+    }
+    .notif.success {
+      background: #d7ffd9;
+      border-color: #2ecc71;
+      color: #207a30;
+    }
+  </style>
+</head>
+<body>
+<nav>
+  <div class="brand" onclick="window.location.href='index.html'">🛍️ Fashion Shop</div>
+  <div>
+    <a href="index.html">Beranda</a>
+    <a href="riwayat.html">Pesananku</a>
+  </div>
+</nav>
+
+<h1>🛒 Checkout Produk</h1>
+
+<div class="checkout-container">
+  <div id="notifikasi" class="notif"></div>
+  <div id="checkoutContainer">Memuat data...</div>
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+const supabase = createClient("https://ezciwtljpsxaahkipjnx.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2l3dGxqcHN4YWFoa2lwam54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDQ0NzUsImV4cCI6MjA2MjcyMDQ3NX0.dckoZp453R5N-uAOGEVgCmq33anWu8AXYWalJc6i1Fk");
+
+const container = document.getElementById('checkoutContainer');
+const notifBox = document.getElementById('notifikasi');
+let produkList = JSON.parse(localStorage.getItem('produkCheckoutList')) || [];
+
+function tampilkanNotifikasi(pesan, sukses = false) {
+  notifBox.textContent = pesan;
+  notifBox.classList.toggle("success", sukses);
+  notifBox.style.display = "block";
+  setTimeout(() => notifBox.style.display = "none", 4000);
+}
+
+function updateLocalStorage() {
+  localStorage.setItem('produkCheckoutList', JSON.stringify(produkList));
+}
+
+async function getProdukData(id) {
+  const { data, error } = await supabase
+    .from('produk')
+    .select('warna, promo, diskon, stok, deskripsi')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) {
+    return { warna: ["Merah", "Hitam", "Putih"], promo: "", diskon: 0, stok: 0, deskripsi: "" };
+  }
+
+  let warnaList;
+  try {
+    if (Array.isArray(data.warna)) warnaList = data.warna;
+    else warnaList = data.warna.split(',').map(w => w.trim());
+  } catch {
+    warnaList = ["Merah", "Hitam", "Putih"];
+  }
+
+  return {
+    warna: warnaList,
+    promo: data.promo || "",
+    diskon: data.diskon || 0,
+    stok: data.stok || 0,
+    deskripsi: data.deskripsi || ""
+  };
+}
+
+async function renderCheckout() {
+  if (!produkList.length) {
+    container.innerHTML = `<p>Tidak ada produk dipilih. <a href="index.html">Kembali</a></p>`;
+    return;
+  }
+
+  let totalSemua = 0;
+  let formHTML = "";
+
+  for (let i = 0; i < produkList.length; i++) {
+    const p = produkList[i];
+    const { warna, promo, diskon, stok, deskripsi } = await getProdukData(p.id);
+
+    const hargaDiskon = diskon > 0 ? Math.round(p.harga * (1 - diskon / 100)) : p.harga;
+    const total = hargaDiskon * (p.jumlah || 1);
+    totalSemua += total;
+
+    const warnaOptions = warna.map(w => 
+      `<option value="${w}" ${w === p.warna ? "selected" : ""}>${w}</option>`
+    ).join("");
+
+    formHTML += `
+      <div style="border:1px solid #ddd; padding:15px; margin-bottom:20px; border-radius:8px;">
+        <img src="${p.gambar}" class="product-img" alt="${p.nama}">
+        <div><strong>${p.nama}</strong></div>
+        ${deskripsi ? `<div style="margin:6px 0;color:#555;font-size:14px;">${deskripsi}</div>` : ""}
+        ${promo ? `<div class="promo-text">${promo}</div>` : ""}
+        <div class="price">
+          ${diskon > 0 ? `<span class="harga-asli">Rp ${p.harga.toLocaleString("id-ID")}</span>` : ""}
+          Rp ${hargaDiskon.toLocaleString("id-ID")}
+          ${diskon > 0 ? `<small style="color:#e91e63; font-weight:600; margin-left:5px;">(${diskon}% OFF)</small>` : ""}
+        </div>
+        <div style="margin-top: 8px;"><strong>Stok tersedia:</strong> ${stok}</div>
+        <label>Warna:
+          <select id="warna-${i}">
+            ${warnaOptions}
+          </select>
+        </label>
+        <label>Ukuran:
+          <select id="ukuran-${i}">
+            ${["S", "M", "L", "XL", "XXL"].map(u => `<option value="${u}" ${u === p.ukuran ? "selected" : ""}>${u}</option>`).join("")}
+          </select>
+        </label>
+        <div class="qty-controls">
+          <span>Jumlah:</span>
+          <button onclick="ubahJumlah(${i}, -1)">−</button>
+          <span id="jumlah-${i}">${p.jumlah || 1}</span>
+          <button onclick="ubahJumlah(${i}, 1)">+</button>
+        </div>
+        <div>Total: Rp ${total.toLocaleString("id-ID")}</div>
+        <button class="hapus-btn" onclick="hapusProduk(${i})">❌ Hapus Produk</button>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    ${formHTML}
+    <div class="total-harga">Total Keseluruhan: Rp ${totalSemua.toLocaleString("id-ID")}</div>
+    <label for="namaPemesan">Nama Pemesan:</label>
+    <input type="text" id="namaPemesan" required />
+    <label for="alamatPemesan">Alamat Lengkap:</label>
+    <textarea id="alamatPemesan" rows="3" required></textarea>
+    <label for="waPemesan">Nomor WhatsApp:</label>
+    <input type="text" id="waPemesan" required />
+    <button class="btn-confirm" id="btnPesan">Konfirmasi Semua Pesanan</button>
+  `;
+
+  document.getElementById('btnPesan').addEventListener('click', async () => {
+    const nama = document.getElementById('namaPemesan').value.trim();
+    const alamat = document.getElementById('alamatPemesan').value.trim();
+    const wa = document.getElementById('waPemesan').value.trim();
+
+    if (!nama || !alamat || !wa) {
+      tampilkanNotifikasi("Lengkapi data pemesan!");
+      return;
+    }
+
+    for (let i = 0; i < produkList.length; i++) {
+      const p = produkList[i];
+      const warna = document.getElementById(`warna-${i}`).value;
+      const ukuran = document.getElementById(`ukuran-${i}`).value;
+
+      const { error } = await supabase.from("pesanan").insert({
+        produk_id: p.id,
+        nama: p.nama,
+        warna,
+        ukuran,
+        harga: p.harga,
+        jumlah: p.jumlah || 1,
+        nama_pemesan: nama,
+        alamat,
+        whatsapp: wa,
+        created_at: new Date().toISOString()
+      });
+
+      if (error) {
+        tampilkanNotifikasi(`Gagal menyimpan pesanan untuk ${p.nama}: ${error.message}`);
+        return;
+      }
+    }
+
+    tampilkanNotifikasi("Pesanan berhasil dikirim semua!", true);
+    localStorage.removeItem("produkCheckoutList");
+    setTimeout(() => window.location.href = "index.html", 2000);
+  });
+}
+
+window.ubahJumlah = function(index, delta) {
+  let item = produkList[index];
+  item.jumlah = (item.jumlah || 1) + delta;
+  if (item.jumlah < 1) item.jumlah = 1;
+  updateLocalStorage();
+  renderCheckout();
+};
+
+window.hapusProduk = function(index) {
+  produkList.splice(index, 1);
+  updateLocalStorage();
+  renderCheckout();
+  tampilkanNotifikasi("Produk telah dihapus dari checkout.", true);
+};
+
+renderCheckout();
+</script>
+</body>
+</html>

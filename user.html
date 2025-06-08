@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pengaturan Pengiriman & Pembayaran</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f9f9f9;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+    }
+    label {
+      margin-top: 10px;
+      display: block;
+      font-weight: bold;
+    }
+    select, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    #location, #ongkir {
+      margin-top: 10px;
+      background: #fff3cd;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    #message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Pengaturan Pengiriman</h2>
+
+    <label for="payment">Metode Pembayaran:</label>
+    <select id="payment">
+      <option value="cod">COD</option>
+      <option value="transfer">Transfer Bank</option>
+      <option value="ewallet">E-Wallet</option>
+    </select>
+
+    <label for="courier">Jasa Pengiriman:</label>
+    <select id="courier">
+      <option value="jne">JNE</option>
+      <option value="jnt">J&T</option>
+      <option value="pos">POS Indonesia</option>
+    </select>
+
+    <button onclick="getLocation()">📍 Ambil Lokasi Saya</button>
+    <div id="location">Lokasi: Belum diketahui</div>
+    <div id="ongkir">Ongkir: -</div>
+
+    <button onclick="simpanKeSupabase()">💾 Simpan ke Supabase</button>
+    <div id="message"></div>
+  </div>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const supabaseUrl = 'https://ezciwtljpsxaahkipjnx.supabase.co'; // ganti dengan URL kamu
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2l3dGxqcHN4YWFoa2lwam54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDQ0NzUsImV4cCI6MjA2MjcyMDQ3NX0.dckoZp453R5N-uAOGEVgCmq33anWu8AXYWalJc6i1Fk'; // ganti dengan anon/public key kamu
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let latitude = null;
+    let longitude = null;
+    let ongkir = null;
+
+    const tokoLat = -6.2000;
+    const tokoLng = 106.8166;
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          latitude = pos.coords.latitude;
+          longitude = pos.coords.longitude;
+          document.getElementById("location").innerText = `Lokasi: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+          const jarak = hitungJarak(latitude, longitude, tokoLat, tokoLng);
+          ongkir = Math.round(jarak * 2000);
+          document.getElementById("ongkir").innerText = `Perkiraan Ongkir: Rp ${ongkir.toLocaleString()}`;
+        }, () => {
+          document.getElementById("location").innerText = "Gagal mendapatkan lokasi.";
+        });
+      } else {
+        document.getElementById("location").innerText = "Geolocation tidak didukung.";
+      }
+    }
+
+    function hitungJarak(lat1, lon1, lat2, lon2) {
+      const R = 6371; // km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    async function simpanKeSupabase() {
+      const payment = document.getElementById('payment').value;
+      const courier = document.getElementById('courier').value;
+
+      if (!latitude || !longitude || !ongkir) {
+        document.getElementById('message').innerText = '❗ Harap ambil lokasi terlebih dahulu.';
+        document.getElementById('message').style.backgroundColor = '#f8d7da';
+        return;
+      }
+
+      const { data, error } = await supabase.from('pengaturan_pengiriman').insert([{
+        payment_method: payment,
+        courier: courier,
+        latitude: latitude,
+        longitude: longitude,
+        ongkir: ongkir
+      }]);
+
+      if (error) {
+        document.getElementById('message').innerText = '❌ Gagal menyimpan: ' + error.message;
+        document.getElementById('message').style.backgroundColor = '#f8d7da';
+      } else {
+        document.getElementById('message').innerText = '✅ Data berhasil disimpan ke Supabase!';
+        document.getElementById('message').style.backgroundColor = '#d4edda';
+      }
+    }
+  </script>
+</body>
+</html>

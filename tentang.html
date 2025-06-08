@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tentang Kami</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background: #f5f8fa;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+    p {
+      line-height: 1.6;
+      font-size: 1.1em;
+      margin-bottom: 20px;
+    }
+    .team {
+      margin-top: 40px;
+    }
+    .team h2 {
+      margin-bottom: 20px;
+      color: #34495e;
+    }
+    .member-list {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .member {
+      background: #ecf0f1;
+      padding: 20px;
+      border-radius: 10px;
+      width: 180px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .member img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 15px;
+      border: 3px solid #3498db;
+    }
+    .member h3 {
+      margin: 0 0 5px 0;
+      font-size: 1.1em;
+      color: #2c3e50;
+    }
+    .member p {
+      font-size: 0.9em;
+      color: #7f8c8d;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+  <div class="brand" onclick="window.location.href='index.html'">🛍️ Fashion Shop</div>
+  <div>
+    <a href="index.html">Beranda</a>
+  </div>
+</nav>
+  <div class="container">
+    <h1>Tentang Kami</h1>
+    <div id="paragraf-container"></div>
+    
+    <div class="team">
+      <h2>Tim Kami</h2>
+      <div class="member-list" id="teamList">
+        <!-- Diisi lewat JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabaseUrl = 'https://ezciwtljpsxaahkipjnx.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2l3dGxqcHN4YWFoa2lwam54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDQ0NzUsImV4cCI6MjA2MjcyMDQ3NX0.dckoZp453R5N-uAOGEVgCmq33anWu8AXYWalJc6i1Fk'; // pastikan lengkap
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function loadAboutUs() {
+      const { data, error } = await client
+        .from('about_us')
+        .select('*')
+        .eq('id', 1)
+        .single();
+
+      if (error) {
+        console.error('Gagal memuat data:', error.message);
+        document.getElementById('paragraf-container').innerHTML = '<p>Gagal memuat informasi.</p>';
+        return;
+      }
+
+      // Tampilkan paragraf
+      const paragrafHTML = `
+        <p>${data.paragraph1}</p>
+        <p>${data.paragraph2}</p>
+      `;
+      document.getElementById('paragraf-container').innerHTML = paragrafHTML;
+
+      // Tampilkan anggota tim
+      const teamList = document.getElementById('teamList');
+      teamList.innerHTML = '';
+
+      if (Array.isArray(data.team)) {
+        data.team.forEach(member => {
+          const memberDiv = document.createElement('div');
+          memberDiv.className = 'member';
+          memberDiv.innerHTML = `
+            <img src="${member.photo_url}" alt="${member.name}" />
+            <h3>${member.name}</h3>
+            <p>${member.position}</p>
+          `;
+          teamList.appendChild(memberDiv);
+        });
+      }
+    }
+
+    loadAboutUs();
+  </script>
+</body>
+</html>

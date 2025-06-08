@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riwayat Pesanan</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .order-card { display: flex; gap: 10px; margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
+    .order-info { flex: 1; }
+    .btn-cancel, .btn-edit, .btn-hapus, .btn-selesai, .btn-simpan, .btn-batal {
+      margin: 5px 3px; padding: 5px 10px; cursor: pointer; border: none; border-radius: 4px;
+    }
+    .btn-cancel { background: #f44336; color: white; }
+    .btn-edit { background: #ffc107; color: black; }
+    .btn-hapus { background: #9e9e9e; color: white; }
+    .btn-selesai { background: #4caf50; color: white; }
+    .btn-simpan { background: #2196f3; color: white; }
+    .btn-batal { background: #e0e0e0; }
+    .zoomable { width: 100px; height: 100px; object-fit: cover; cursor: pointer; }
+    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 4px; opacity: 0; transition: 0.3s; }
+    #toast.show { opacity: 1; }
+    #imgModal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; z-index:1000; }
+    #imgModal img { max-width: 90%; max-height: 90%; }
+    #modalKonfirmasi, #modalEdit { display: none; position:fixed; z-index:1000; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; }
+    #modalKonfirmasi > div, #modalEdit > div { background: white; padding: 20px; border-radius: 8px; max-width: 300px; width: 90%; }
+    .edit-input { width: 100%; margin: 5px 0; padding: 5px; }
+    .status.pending { color: orange; }
+    .status.dikirim { color: blue; }
+    .status.selesai { color: green; }
+  </style>
+</head>
+<body>
+
+<h2>🛒 Riwayat Pesanan</h2>
+<div id="riwayatContainer"></div>
+<h3 id="totalKeseluruhan"></h3>
+
+<!-- Modal Konfirmasi Batalkan -->
+<div id="modalKonfirmasi">
+  <div>
+    <p>Yakin ingin membatalkan pesanan?</p>
+    <button class="yes">✅ Ya</button>
+    <button class="no">❌ Tidak</button>
+  </div>
+</div>
+
+<!-- Modal Edit -->
+<div id="modalEdit">
+  <div>
+    <h3>Edit Pesanan</h3>
+    <input id="editUkuran" placeholder="Ukuran" class="edit-input" />
+    <input id="editWarna" placeholder="Warna" class="edit-input" />
+    <input id="editJumlah" type="number" placeholder="Jumlah" min="1" class="edit-input" />
+    <button id="simpanEdit" class="btn-simpan">💾 Simpan</button>
+    <button id="batalEdit" class="btn-batal">❌ Batal</button>
+  </div>
+</div>
+
+<!-- Modal Gambar -->
+<div id="imgModal">
+  <img src="" alt="Zoom" />
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+const supabase = createClient(
+  "https://ezciwtljpsxaahkipjnx.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2l3dGxqcHN4YWFoa2lwam54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDQ0NzUsImV4cCI6MjA2MjcyMDQ3NX0.dckoZp453R5N-uAOGEVgCmq33anWu8AXYWalJc6i1Fk"
+);
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 3000);
+}
+
+let idUntukDibatalkan = null;
+let pesananIdYangDiedit = null;
+
+async function getPublicUrl(path) {
+  const { data } = supabase.storage.from("produk").getPublicUrl(path);
+  return data?.publicUrl || "https://via.placeholder.com/100";
+}
+
+async function loadRiwayat() {
+  const { data, error } = await supabase.from("pesanan").select("*").order("created_at", { ascending: false });
+  const container = document.getElementById("riwayatContainer");
+  const totalEl = document.getElementById("totalKeseluruhan");
+  container.innerHTML = "";
+  totalEl.textContent = "";
+
+  if (error) return container.innerHTML = `<p>Gagal memuat pesanan: ${error.message}</p>`;
+  if (!data || data.length === 0) return container.innerHTML = `<p>Belum ada pesanan.</p>`;
+
+  let totalKeseluruhan = 0;
+
+  for (const p of data) {
+    let imgSrc = "https://via.placeholder.com/100";
+    let promoLabel = "", hargaAsli = Number(p.harga), hargaSetelahDiskon = hargaAsli;
+    const jumlah = parseInt(p.jumlah || 1);
+    let totalPerProduk = hargaSetelahDiskon * jumlah;
+
+    if (p.produk_id) {
+      const { data: produk } = await supabase.from("produk").select("gambar, promo, diskon").eq("id", p.produk_id).single();
+      if (produk) {
+        let gambarPertama = Array.isArray(produk.gambar) ? produk.gambar[0] : produk.gambar;
+        if (gambarPertama && !gambarPertama.startsWith("http")) imgSrc = await getPublicUrl(gambarPertama);
+        else if (gambarPertama) imgSrc = gambarPertama;
+
+        if (produk.diskon > 0 && produk.diskon <= 100) {
+          hargaSetelahDiskon = hargaAsli - Math.floor((produk.diskon / 100) * hargaAsli);
+          totalPerProduk = hargaSetelahDiskon * jumlah;
+          promoLabel += `<span style="color:#d00;font-weight:bold">Diskon ${produk.diskon}% 🎉</span><br>
+            <del>Rp ${hargaAsli.toLocaleString("id-ID")}</del> ➜   
+            <strong>Rp ${hargaSetelahDiskon.toLocaleString("id-ID")}</strong><br>`;
+        }
+
+        if (produk.promo) promoLabel += `<em style="color:#007bff;">${produk.promo}</em><br>`;
+      }
+    }
+
+    totalKeseluruhan += totalPerProduk + (p.biaya_kirim || 0);
+
+    const card = document.createElement("div");
+    card.className = "order-card";
+    card.innerHTML = `
+      <img src="${imgSrc}" alt="${p.nama}" class="zoomable">
+      <div class="order-info">
+        <strong>${p.nama}</strong><br>
+        Ukuran: ${p.ukuran || "-"} | Warna: ${p.warna || "-"} | Jumlah: ${jumlah}<br>
+        ${promoLabel || `Rp ${hargaAsli.toLocaleString("id-ID")}<br>`}
+        <strong>Total Produk: Rp ${totalPerProduk.toLocaleString("id-ID")}</strong><br>
+        Jasa Kirim: <strong>${p.jasa_kirim || "-"}</strong><br>
+        Estimasi Ongkir: <strong>Rp ${(p.biaya_kirim || 0).toLocaleString("id-ID")}</strong><br>
+        <div class="status ${p.status}">Status: ${p.status || 'pending'}</div>
+        ${
+          p.status === 'pending' || p.status === 'dikirim'
+            ? `
+              ${p.status === 'pending' ? `<button class="btn-cancel" onclick="konfirmasiPembatalan('${p.id}')">Batalkan</button>` : ''}
+              <button class="btn-edit" onclick="editPesanan('${p.id}', '${p.ukuran || ''}', '${p.warna || ''}', ${p.jumlah || 1})">✏️ Edit</button>
+              <button class="btn-hapus" onclick="hapusPesanan('${p.id}')">🗑️ Hapus</button>
+              <button class="btn-selesai" onclick="terimaPesanan('${p.id}', '${p.produk_id}')">✔ Terima</button>
+            `
+            : ''
+        }
+      </div>
+    `;
+    container.appendChild(card);
+  }
+
+  totalEl.textContent = `💰 Total Keseluruhan: Rp ${totalKeseluruhan.toLocaleString("id-ID")}`;
+
+  setTimeout(() => {
+    document.querySelectorAll(".zoomable").forEach(img => {
+      img.addEventListener("click", () => {
+        const modal = document.getElementById("imgModal");
+        modal.classList.add("show");
+        modal.style.display = "flex";
+        modal.querySelector("img").src = img.src;
+      });
+    });
+  }, 100);
+}
+
+window.konfirmasiPembatalan = (id) => {
+  idUntukDibatalkan = id;
+  document.getElementById("modalKonfirmasi").style.display = "flex";
+};
+
+document.querySelector("#modalKonfirmasi .yes").onclick = async () => {
+  const { error } = await supabase.from("pesanan").delete().eq("id", idUntukDibatalkan);
+  if (error) showToast("❌ Gagal membatalkan pesanan.");
+  else showToast("✅ Pesanan dibatalkan.");
+  document.getElementById("modalKonfirmasi").style.display = "none";
+  loadRiwayat();
+};
+
+document.querySelector("#modalKonfirmasi .no").onclick = () => {
+  document.getElementById("modalKonfirmasi").style.display = "none";
+};
+
+window.terimaPesanan = async (pesananId, produkId) => {
+  const { data: pesanan } = await supabase.from("pesanan").select("jumlah").eq("id", pesananId).single();
+  const jumlah = parseInt(pesanan?.jumlah || 1);
+  const { data: produk } = await supabase.from("produk").select("stok").eq("id", produkId).single();
+  const stokBaru = (produk?.stok || 0) - jumlah;
+  if (stokBaru < 0) return showToast("❌ Stok produk tidak cukup!");
+
+  await supabase.from("produk").update({ stok: stokBaru }).eq("id", produkId);
+  await supabase.from("pesanan").delete().eq("id", pesananId);
+  showToast("✅ Pesanan berhasil diterima.");
+  loadRiwayat();
+};
+
+window.editPesanan = (id, ukuran, warna, jumlah) => {
+  pesananIdYangDiedit = id;
+  document.getElementById("editUkuran").value = ukuran;
+  document.getElementById("editWarna").value = warna;
+  document.getElementById("editJumlah").value = jumlah;
+  document.getElementById("modalEdit").style.display = "flex";
+};
+
+document.getElementById("simpanEdit").onclick = async () => {
+  const ukuran = document.getElementById("editUkuran").value;
+  const warna = document.getElementById("editWarna").value;
+  const jumlah = parseInt(document.getElementById("editJumlah").value);
+
+  if (!jumlah || jumlah < 1) return showToast("❌ Jumlah tidak valid.");
+
+  const { error } = await supabase.from("pesanan").update({
+    ukuran, warna, jumlah
+  }).eq("id", pesananIdYangDiedit);
+
+  if (error) showToast("❌ Gagal mengedit pesanan.");
+  else showToast("✅ Pesanan berhasil diperbarui.");
+
+  document.getElementById("modalEdit").style.display = "none";
+  loadRiwayat();
+};
+
+document.getElementById("batalEdit").onclick = () => {
+  document.getElementById("modalEdit").style.display = "none";
+};
+
+window.hapusPesanan = async (id) => {
+  const { error } = await supabase.from("pesanan").delete().eq("id", id);
+  if (error) showToast("❌ Gagal menghapus pesanan.");
+  else {
+    showToast("✅ Pesanan dihapus.");
+    loadRiwayat();
+  }
+};
+
+document.getElementById("imgModal").onclick = () => {
+  document.getElementById("imgModal").style.display = "none";
+};
+
+loadRiwayat();
+</script>
+</body>
+</html>
