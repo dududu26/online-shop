@@ -124,67 +124,120 @@
       font-weight: 20;
       color: #1e88e5;
     }
+
+    #aksesContainer {
+      text-align: center;
+      margin-top: 150px;
+    }
+
+    #aksesContainer input {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    #aksesContainer button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      background-color: #1e88e5;
+      color: white;
+      border: none;
+      margin-top: 10px;
+    }
+
+    #aksesContainer p {
+      color: red;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
-  <nav>
-    <div class="brand">Admin Panel</div>
-    <div class="nav-links">
-      <a href="daftar-pesanan.html">pesanan</a>
-      <a href="utentang.html">edit tentang</a>
-      <a href="dashadmin.html">stok</a>
-    </div>
-  </nav>
 
-  <h1>Tambah Produk Baru</h1>
+  <!-- Form Kode Akses -->
+  <div id="aksesContainer">
+    <h2>Masukkan Kode Akses Admin</h2>
+    <input type="password" id="kodeAkses" placeholder="Masukkan kode akses" />
+    <br />
+    <button onclick="cekKodeAkses()">Lanjut</button>
+    <p id="pesanKode"></p>
+  </div>
 
-  <form id="produkForm">
-    <label>Gambar Produk</label>
-    <input type="file" id="gambar" accept="image/*" required />
+  <!-- Konten Admin -->
+  <div id="kontenAdmin" style="display: none;">
+    <nav>
+      <div class="brand">Admin Panel</div>
+      <div class="nav-links">
+        <a href="daftar-pesanan.html">pesanan</a>
+        <a href="utentang.html">edit tentang</a>
+        <a href="dashadmin.html">stok</a>
+      </div>
+    </nav>
 
-    <label>Nama Produk</label>
-    <input type="text" id="nama" required />
+    <h1>Tambah Produk Baru</h1>
 
-    <label>Harga</label>
-    <input type="number" id="harga" required />
+    <form id="produkForm">
+      <label>Gambar Produk</label>
+      <input type="file" id="gambar" accept="image/*" required />
 
-    <label>Modal (Rp)</label>
-    <input type="number" id="modal" required />
+      <label>Nama Produk</label>
+      <input type="text" id="nama" required />
 
-    <label>Deskripsi</label>
-    <textarea id="deskripsi" rows="4"></textarea>
+      <label>Harga</label>
+      <input type="number" id="harga" required />
 
-    <label>Jenis</label>
-    <input type="text" id="jenis" />
+      <label>Modal (Rp)</label>
+      <input type="number" id="modal" required />
 
-    <label>Warna</label>
-    <input type="text" id="warna" />
+      <label>Deskripsi</label>
+      <textarea id="deskripsi" rows="4"></textarea>
 
-    <label>Kategori</label>
-    <input type="text" id="kategori" required />
+      <label>Jenis</label>
+      <input type="text" id="jenis" />
 
-    <label>Ukuran</label>
-    <input type="text" id="ukuran" />
+      <label>Warna</label>
+      <input type="text" id="warna" />
 
-    <label>Stok</label>
-    <input type="number" id="stok" required />
+      <label>Kategori</label>
+      <input type="text" id="kategori" required />
 
-    <label>Tersedia?</label>
-    <select id="tersedia">
-      <option value="true">Ya</option>
-      <option value="false">Tidak</option>
-    </select>
+      <label>Ukuran</label>
+      <input type="text" id="ukuran" />
 
-    <label>Promo</label>
-    <input type="text" id="promo" placeholder="Contoh: Lebaran Sale" />
+      <label>Stok</label>
+      <input type="number" id="stok" required />
 
-    <label>Diskon (%)</label>
-    <input type="number" id="diskon" placeholder="Contoh: 20" min="0" max="100" />
+      <label>Tersedia?</label>
+      <select id="tersedia">
+        <option value="true">Ya</option>
+        <option value="false">Tidak</option>
+      </select>
 
-    <button type="submit">Tambah Produk</button>
-    <div id="status"></div>
-  </form>
+      <label>Promo</label>
+      <input type="text" id="promo" placeholder="Contoh: Lebaran Sale" />
 
+      <label>Diskon (%)</label>
+      <input type="number" id="diskon" placeholder="Contoh: 20" min="0" max="100" />
+
+      <button type="submit">Tambah Produk</button>
+      <div id="status"></div>
+    </form>
+  </div>
+
+  <!-- Script Validasi Akses -->
+  <script>
+    function cekKodeAkses() {
+      const kode = document.getElementById("kodeAkses").value;
+      const pesan = document.getElementById("pesanKode");
+      if (kode === "261296") {
+        document.getElementById("aksesContainer").style.display = "none";
+        document.getElementById("kontenAdmin").style.display = "block";
+      } else {
+        pesan.textContent = "❌ Kode akses salah!";
+      }
+    }
+  </script>
+
+  <!-- Script Supabase -->
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
